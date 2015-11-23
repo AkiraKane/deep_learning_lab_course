@@ -1,8 +1,9 @@
 import numpy as np
+import math
 
 from ..layers import Layer, Parameterized, Activation
-
 class Conv(Layer, Parameterized):
+
     """ 
     A convolutional layer that supports convolving an input tensor
     with a set of filters.
@@ -46,6 +47,32 @@ class Conv(Layer, Parameterized):
         self.W = np.random.normal(size=W_shape, scale=self.init_stddev)
         self.b = np.zeros(self.n_feats)
 
+    def conv(self, inputs, weights, strides, padding_mode, convout):
+        # Pad the input image to realize the 'same convolution'
+        filter_dimension = weights.shape[-2:]
+        row_pad = (filter_dimension[0] - 1) / 2.0
+        col_pad = (filter_dimension[1] - 1) / 2.0
+
+        # Pad the images
+        padded = np.pad(inputs, ((0, 0), (0, 0), (math.floor(row_pad), math.ceil(row_pad)), (math.floor(col_pad),
+                        math.ceil(col_pad))), 'constant')
+
+        for input in range(len(inputs)):
+            for output_row in range(input.shape[2]):
+                for output_col in range(input.shape[3]):
+                    for filter in range(input.shape[1]):
+                        row_start = output_row
+                        row_end = output_row + filter_dimension[0]
+                        col_start = output_col
+                        col_end = output_col + filter_dimension[1]
+
+                        patch_sum = 0
+                        for channel in range(weights.shape[0]):
+                            patch_sum += np.sum(padded[input, channel, row_start : row_end,
+                                                col_start : col_end] * weights[channel, filter])
+
+                        convout[input, filter, output_row, output_col] = patch_sum
+
     def fprop(self, input):
         # we cache the input and the input
         self.last_input = input
@@ -59,7 +86,7 @@ class Conv(Layer, Parameterized):
         # HINT: I recommend putting conv and pooling in little helper functions
         #       at the start of this file!
         #       The call to these should then look something like:
-        #conv(input, self.W, self.strides, self.padding_mode, convout)
+        self.conv(input, self.W, self.strides, self.padding_mode, convout)
         # TODO
         convout += self.b[np.newaxis, :, np.newaxis, np.newaxis]
         if self.activation_fun is not None:
@@ -126,6 +153,23 @@ class Pool(Layer):
         self.stride_y, self.stride_x = strides
         self.input_shape = input_layer.output_size()
 
+    def pool(self, input, poolout, last_switches, pool_h, pool_w, stride_y, stride_x):
+        for img in range(len(input)):
+            for channel in range(input.shape[1]):
+                for out_row in range(0, input.shape[2], stride_y):
+                    out_row_end = min(out_row + pool_h, input.shape[2])
+                    for out_col in range(0, input.shape[3], stride_x):
+                        out_col_end = min(out_col + pool_w, input.shape[3])
+
+                        submatrix = input[img, channel, out_row : out_row_end, out_col : out_col_end]
+
+                        max_value = submatrix.max()
+                        max_coords = np.ravel(np.where(submatrix == max_value))
+                        max_coords += np.array([out_row, out_col])
+
+                        poolout[img, channel, out_row // stride_y, out_col // stride_x] = max_value
+                        last_switches[img, channel, out_row // stride_y, out_col // stride_x] = max_coords
+
     def fprop(self, input):
         # we cache the input
         self.last_input_shape = input.shape
@@ -144,8 +188,8 @@ class Pool(Layer):
         #       (switches) in self.last_switches, you will need those in the
         #       backward pass!
         # the call should look something like:
-        #pool(input, poolout, self.last_switches, self.pool_h, self.pool_w,
-        #     self.stride_y, self.stride_x)
+        self.pool(input, poolout, self.last_switches, self.pool_h, self.pool_w,
+             self.stride_y, self.stride_x)
         # TODO
         return poolout
 
