@@ -1,7 +1,8 @@
-import numpy as np
-import cPickle
+# import numpy as np
+import pickle
 import os
 import gzip
+
 
 def mnist(datasets_dir='./data'):
     if not os.path.exists(datasets_dir):
@@ -21,9 +22,9 @@ def mnist(datasets_dir='./data'):
     # Load the dataset
     f = gzip.open(data_file, 'rb')
     try:
-        train_set, valid_set, test_set = cPickle.load(f, encoding="latin1")
+        train_set, valid_set, test_set = pickle.load(f, encoding="latin1")
     except TypeError:
-        train_set, valid_set, test_set = cPickle.load(f)
+        train_set, valid_set, test_set = pickle.load(f)
     f.close()
 
     test_x, test_y = test_set
@@ -40,4 +41,3 @@ def mnist(datasets_dir='./data'):
     rval = [(train_x, train_y), (valid_x, valid_y), (test_x, test_y)]
     print('... done loading data')
     return rval
-
