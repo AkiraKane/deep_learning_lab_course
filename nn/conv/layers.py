@@ -5,7 +5,7 @@ from ..layers import Layer, Parameterized, Activation
 
 
 class Conv(Layer, Parameterized):
-    """ 
+    """
     A convolutional layer that supports convolving an input tensor
     with a set of filters.
     We will, for now, assume that we always want zero padding around
@@ -22,7 +22,7 @@ class Conv(Layer, Parameterized):
     filter_shape : a tuple specifying the filter shape, e.g. (5,5)
     strides : a tuple specifying the stride of the convolution, e.g. (1,1)
     init_stddef : a float specifying the standard deviation for weight init
-    padding_mode : a string specifying which padding mode to use 
+    padding_mode : a string specifying which padding mode to use
       (we only support zero padding or 'same' convolutions for now)
     activation_fun : a :class:`Activation` instance
     """
@@ -33,7 +33,7 @@ class Conv(Layer, Parameterized):
                  activation_fun=Activation('relu')):
         """
         Initialize convolutional layer.
-        :parameters@param input_layer 
+        :parameters@param input_layer
 
         """
         self.n_feats = n_feats
@@ -45,7 +45,7 @@ class Conv(Layer, Parameterized):
         self.n_channels = self.input_shape[1]
         self.activation_fun = activation_fun
 
-        W_shape = (self.n_channels, self.n_feats) + self.filter_shape
+        W_shape = (self.n_channels, self.n_feats) + self.filter_shape  # noqa
         self.W = np.random.normal(size=W_shape, scale=self.init_stddev)
         self.b = np.zeros(self.n_feats)
 
@@ -56,8 +56,10 @@ class Conv(Layer, Parameterized):
         col_pad = (filter_dimension[1] - 1) / 2.0
 
         # Pad the images
-        padded = np.pad(inputs, ((0, 0), (0, 0), (math.floor(row_pad), math.ceil(row_pad)), (math.floor(col_pad),
-                        math.ceil(col_pad))), 'constant')
+        padded = np.pad(inputs, ((0, 0), (0, 0),
+                                 (math.floor(row_pad), math.ceil(row_pad)),
+                                 (math.floor(col_pad),
+                                 math.ceil(col_pad))), 'constant')
 
         for input in range(len(inputs)):
             for output_row in range(input.shape[2]):
@@ -70,10 +72,13 @@ class Conv(Layer, Parameterized):
 
                         patch_sum = 0
                         for channel in range(weights.shape[0]):
-                            patch_sum += np.sum(padded[input, channel, row_start : row_end,
-                                                col_start : col_end] * weights[channel, filter])
+                            patch_sum += np.sum(padded[input, channel,
+                                                row_start: row_end,
+                                                col_start: col_end] *
+                                                weights[channel, filter])
 
-                        convout[input, filter, output_row, output_col] = patch_sum
+                        convout[input, filter,
+                                output_row, output_col] = patch_sum
 
     def fprop(self, input):
         # we cache the input and the input
@@ -88,7 +93,7 @@ class Conv(Layer, Parameterized):
         # HINT: I recommend putting conv and pooling in little helper functions
         #       at the start of this file!
         #       The call to these should then look something like:
-        #conv(input, self.W, self.strides, self.padding_mode, convout)
+        # conv(input, self.W, self.strides, self.padding_mode, convout)
         # TODO
         convout += self.b[np.newaxis, :, np.newaxis, np.newaxis]
         if self.activation_fun is not None:
@@ -97,10 +102,52 @@ class Conv(Layer, Parameterized):
             return convout
 
     def bprop_conv(self, last_input, output_grad_pre, W, input_grad, dW):  # noqa
-        pass
+        filter_mid_row = W.shape[2] // 2
+        filter_mid_col = W.shape[3] // 2
+
+        print("Output-grad shape: " + str(output_grad_pre.shape))
+        print("W shape: " + str(W.shape))
+
+        for image_index in range(last_input.shape[0]):
+            for channel_index in range(W.shape[1]):
+                for row in range(last_input.shape[2]):
+                    y_off_min = max(-row, -filter_mid_row)
+                    y_off_max = min(last_input.shape[2] -
+                                    row, filter_mid_row + 1)
+
+                    for col in range(last_input.shape[3]):
+                        convout_grad_value = output_grad_pre[image_index,
+                                                             channel_index,
+                                                             row, col]
+                        x_off_min = max(-col, -filter_mid_col)
+                        x_off_max = min(last_input.shape[3] - col,
+                                        filter_mid_col + 1)
+
+                        for row_off in range(y_off_min, y_off_max):
+                            for col_off in range(x_off_min, x_off_max):
+                                img_row = row + row_off
+                                img_col = col + col_off
+                                fil_row = filter_mid_row + row_off
+                                fil_col = filter_mid_col + col_off
+
+                                for img_channel in range(last_input.shape[1]):
+                                    input_grad[image_index, img_channel,
+                                               img_row,
+                                               img_col] += W[img_channel,
+                                                             channel_index,
+                                                             fil_row, fil_col] \
+                                        * convout_grad_value
+                                    dW[img_channel, channel_index,
+                                       fil_row,
+                                       fil_col] += last_input[image_index,
+                                                              img_channel,
+                                                              img_row, img_col]\
+                                        * convout_grad_value
+
+        dW /= last_input.shape[0]
 
     def bprop(self, output_grad):
-        if self.activation_fun == None:
+        if self.activation_fun is None:
             output_grad_pre = output_grad
         else:
             output_grad_pre = self.activation_fun.bprop(output_grad)
@@ -115,7 +162,8 @@ class Conv(Layer, Parameterized):
         # HINT: I recommend putting conv and pooling in little helper functions
         #       at the start of this file!
         #       The call to these should then look something like:
-        #bprop_conv(self.last_input, output_grad_pre, self.W, input_grad,  self.dW)
+        # bprop_conv(self.last_input, output_grad_pre,
+        # self.W, input_grad,  self.dW)
         # TODO
         n_imgs = output_grad_pre.shape[0]
         self.db = np.sum(output_grad_pre, axis=(0, 2, 3)) / (n_imgs)
@@ -152,7 +200,8 @@ class Pool(Layer):
     mode : the pooling type (we only support max-pooling for now)
     """
 
-    def __init__(self, input_layer, pool_shape=(3, 3), strides=(1, 1), mode='max'):
+    def __init__(self, input_layer, pool_shape=(3, 3),
+                 strides=(1, 1), mode='max'):
         if mode != 'max':
             raise NotImplementedError("Only max-pooling currently implemented")
         self.mode = mode
@@ -160,7 +209,8 @@ class Pool(Layer):
         self.stride_y, self.stride_x = strides
         self.input_shape = input_layer.output_size()
 
-    def pool(self, input, poolout, last_switches, pool_h, pool_w, stride_y, stride_x):
+    def pool(self, input, poolout, last_switches,
+             pool_h, pool_w, stride_y, stride_x):
         for img in range(len(input)):
             for channel in range(input.shape[1]):
                 for out_row in range(0, input.shape[2], stride_y):
@@ -168,14 +218,17 @@ class Pool(Layer):
                     for out_col in range(0, input.shape[3], stride_x):
                         out_col_end = min(out_col + pool_w, input.shape[3])
 
-                        submatrix = input[img, channel, out_row : out_row_end, out_col : out_col_end]
+                        submatrix = input[img, channel, out_row:
+                                          out_row_end, out_col: out_col_end]
 
                         max_value = submatrix.max()
                         max_coords = np.ravel(np.where(submatrix == max_value))
                         max_coords += np.array([out_row, out_col])
 
-                        poolout[img, channel, out_row // stride_y, out_col // stride_x] = max_value
-                        last_switches[img, channel, out_row // stride_y, out_col // stride_x] = max_coords
+                        poolout[img, channel, out_row // stride_y,
+                                out_col // stride_x] = max_value
+                        last_switches[img, channel, out_row // stride_y,
+                                      out_col // stride_x] = max_coords
 
     def fprop(self, input):
         # we cache the input
@@ -196,7 +249,7 @@ class Pool(Layer):
         #       backward pass!
         # the call should look something like:
         self.pool(input, poolout, self.last_switches, self.pool_h, self.pool_w,
-             self.stride_y, self.stride_x)
+                  self.stride_y, self.stride_x)
         # TODO
         return poolout
 
@@ -205,7 +258,7 @@ class Pool(Layer):
         # TODO
         # implement the backward pass through the pooling
         # it should use the switches, the call should look something like:
-        #bprop_pool(output_grad, self.last_switches, input_grad)
+        # bprop_pool(output_grad, self.last_switches, input_grad)
         # TODO
         return input_grad
 
@@ -219,9 +272,9 @@ class Pool(Layer):
 
 
 class Flatten(Layer):
-    """ 
+    """
     This is a simple layer that you can use to flatten
-    the output from, for example, a convolution or pooling layer. 
+    the output from, for example, a convolution or pooling layer.
     Such that you can put a fully connected layer on top!
     The result will always preserve the dimensionality along
     the zeroth axis (the batch size) and flatten all other dimensions!
