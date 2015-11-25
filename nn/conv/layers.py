@@ -2,6 +2,7 @@ import numpy as np
 
 from ..layers import Layer, Parameterized, Activation
 
+
 class Conv(Layer, Parameterized):
     """ 
     A convolutional layer that supports convolving an input tensor
@@ -12,7 +13,7 @@ class Conv(Layer, Parameterized):
     (batch_size, input_channels, height, width)
     That is for a 32x32 RGB image and batch size 64 we would have:
     (64, 3, 32, 32)
-    
+
     Parameters
     ----------
     input_layer : a :class:`Layer` instance
@@ -24,14 +25,15 @@ class Conv(Layer, Parameterized):
       (we only support zero padding or 'same' convolutions for now)
     activation_fun : a :class:`Activation` instance
     """
+
     def __init__(self, input_layer, n_feats,
-                 filter_shape, init_stddev, strides=(1,1),
+                 filter_shape, init_stddev, strides=(1, 1),
                  padding_mode='same',
                  activation_fun=Activation('relu')):
         """
         Initialize convolutional layer.
         :parameters@param input_layer 
-        
+
         """
         self.n_feats = n_feats
         self.filter_shape = filter_shape
@@ -41,7 +43,7 @@ class Conv(Layer, Parameterized):
         self.input_shape = input_layer.output_size()
         self.n_channels = self.input_shape[1]
         self.activation_fun = activation_fun
-        
+
         W_shape = (self.n_channels, self.n_feats) + self.filter_shape
         self.W = np.random.normal(size=W_shape, scale=self.init_stddev)
         self.b = np.zeros(self.n_feats)
@@ -66,6 +68,9 @@ class Conv(Layer, Parameterized):
             return self.activation_fun.fprop(convout)
         else:
             return convout
+
+    def bprop_conv(self, last_input, output_grad_pre, W, input_grad, dW):  # noqa
+        pass
 
     def bprop(self, output_grad):
         if self.activation_fun == None:
@@ -94,13 +99,14 @@ class Conv(Layer, Parameterized):
 
     def grad_params(self):
         return self.dW, self.db
-    
+
     def output_size(self):
         if self.padding_mode == 'same':
             h = self.input_shape[2]
             w = self.input_shape[3]
         else:
-            raise NotImplementedError("Unknown padding mode {}".format(self.padding_mode))
+            raise NotImplementedError(
+                "Unknown padding mode {}".format(self.padding_mode))
         shape = (self.input_shape[0], self.n_feats, h, w)
         return shape
 
@@ -118,6 +124,7 @@ class Pool(Layer):
        stides == pool_shape results in non-overlaping pooling
     mode : the pooling type (we only support max-pooling for now)
     """
+
     def __init__(self, input_layer, pool_shape=(3, 3), strides=(1, 1), mode='max'):
         if mode != 'max':
             raise NotImplementedError("Only max-pooling currently implemented")
@@ -132,7 +139,7 @@ class Pool(Layer):
         # and also the switches
         # which are the positions were the maximum was
         # we need those for doing the backwards pass!
-        self.last_switches = np.empty(self.output_size()+(2,),
+        self.last_switches = np.empty(self.output_size() + (2,),
                                       dtype=np.int)
         poolout = np.empty(self.output_size())
         # TODO
@@ -144,7 +151,7 @@ class Pool(Layer):
         #       (switches) in self.last_switches, you will need those in the
         #       backward pass!
         # the call should look something like:
-        #pool(input, poolout, self.last_switches, self.pool_h, self.pool_w,
+        # pool(input, poolout, self.last_switches, self.pool_h, self.pool_w,
         #     self.stride_y, self.stride_x)
         # TODO
         return poolout
@@ -157,13 +164,13 @@ class Pool(Layer):
         #bprop_pool(output_grad, self.last_switches, input_grad)
         # TODO
         return input_grad
-    
+
     def output_size(self):
         input_shape = self.input_shape
         shape = (input_shape[0],
                  input_shape[1],
-                 input_shape[2]//self.stride_y,
-                 input_shape[3]//self.stride_x)
+                 input_shape[2] // self.stride_y,
+                 input_shape[3] // self.stride_x)
         return shape
 
 
@@ -178,7 +185,7 @@ class Flatten(Layer):
 
     def __init__(self, input_layer):
         self.input_shape = input_layer.output_size()
-        
+
     def fprop(self, input):
         self.last_input_shape = input.shape
         return np.reshape(input, (input.shape[0], -1))
