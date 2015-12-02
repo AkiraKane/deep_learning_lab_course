@@ -3,6 +3,7 @@
 import numpy as np
 import nn
 
+
 def main():
     input_shape = (5, 1, 28, 28)
     n_labels = 6
@@ -27,8 +28,8 @@ def main():
     net = nn.NeuralNetwork(layers)
 
     # create random data
-    X = np.random.normal(size=input_shape)
-    Y = np.zeros((input_shape[0], n_labels))
+    X = np.random.normal(size=input_shape)  # noqa
+    Y = np.zeros((input_shape[0], n_labels))  # noqa
     for i in range(Y.shape[0]):
         idx = np.random.randint(n_labels)
         Y[i, idx] = 1.

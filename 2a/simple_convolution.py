@@ -16,15 +16,18 @@ def conv(image, filters, convout):
     pad_dim_x = (filters.shape[2] - 1) / 2
     pad_dim_y = (filters.shape[3] - 1) / 2
     padded_image = np.pad(image, ((0, 0), (0, 0),
-                        (math.floor(pad_dim_x), math.ceil(pad_dim_x)),
-                        (math.floor(pad_dim_y), math.ceil(pad_dim_y))),
-                'constant')
+                          (math.floor(pad_dim_x), math.ceil(pad_dim_x)),
+                          (math.floor(pad_dim_y), math.ceil(pad_dim_y))),
+                          'constant')
     for batch in range(image.shape[0]):
         for height in range(image.shape[2]):
             for width in range(image.shape[3]):
-                image_part = padded_image[batch, 0, height:(height + filters.shape[2]), width:(width + filters.shape[3])]
+                image_part = padded_image[batch, 0,
+                                          height:(height + filters.shape[2]),
+                                          width:(width + filters.shape[3])]
                 image_solution = np.multiply(filters[0][0], image_part)
                 convout[batch, 0, height, width] = np.sum(image_solution)
+
 
 def main():
     """
