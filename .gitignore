@@ -1,2 +1,6 @@
 *.py~
 *.pyc
+*.so
+*.c
+build
+data
