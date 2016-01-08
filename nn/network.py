@@ -101,16 +101,16 @@ class NeuralNetwork:
             # Output some statistics
             if e % log_every == 0:
                 train_error = self.classification_error(X, Y, batch_size)
-                print('epoch {:4d}, loss {:.4f}, train error {:.4f}'
+                print('epoch {:4d}, loss {:.10f}, train error {:.10f}'
                       .format(e, train_loss, train_error))
                 if Xvalid is not None:
                     valid_error = self.classification_error(Xvalid, Yvalid,
                                                             batch_size)
-                    print('\t\t\t valid error {:.4f}'.format(valid_error))
+                    print('\t\t\t valid error {:.10f}'.format(valid_error))
             else:
                 # only basic output that induces no additional computational
                 # costs
-                print('epoch {:4d}, loss {:.4f}'.format(e, train_loss))
+                print('epoch {:4d}, loss {:.10f}'.format(e, train_loss))
 
     def check_gradients(self, X, Y):  # noqa
         """ Helper function to test the parameter gradients for

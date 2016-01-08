@@ -1,4 +1,7 @@
 #!/usr/bin/python2.7
+"""
+Run Network
+"""
 import numpy as np
 import nn
 import time
