@@ -26,29 +26,57 @@ input_shape = (None, 3, 32, 32)
 layers = [nn.InputLayer(input_shape)]
 layers.append(nn.Conv(
               layers[-1],
-              n_feats=2,
-              filter_shape=(3, 3),
+              n_feats=32,
+              filter_shape=(5, 5),
               init_stddev=0.1,
               activation_fun=nn.layers.Activation('relu')))
+
+layers.append(nn.Pool(layers[-1]))
+              
+layers.append(nn.Conv(
+              layers[-1],
+              n_feats=32,
+              filter_shape=(5, 5),
+              init_stddev=0.1,
+              activation_fun=nn.layers.Activation('relu')))
+
+layers.append(nn.Pool(layers[-1]))
+
+layers.append(nn.Conv(
+              layers[-1],
+              n_feats=64,
+              filter_shape=(5, 5),
+              init_stddev=0.1,
+              activation_fun=nn.layers.Activation('relu')))
+
 layers.append(nn.Flatten(layers[-1]))
+
 layers.append(nn.FullyConnectedLayer(
               layers[-1],
-              num_units=100,
+              num_units=64,
               init_stddev=0.1,
               activation_fun=nn.layers.Activation('relu')))
+
+layers.append(nn.FullyConnectedLayer(
+              layers[-1],
+              num_units=10,
+              init_stddev=0.1,
+              activation_fun=nn.layers.Activation('linear')))
+
 layers.append(nn.FullyConnectedLayer(
               layers[-1],
               num_units=10,
               init_stddev=0.1,
               activation_fun=None))
 layers.append(nn.SoftmaxOutput(layers[-1]))
+
 net = nn.NeuralNetwork(layers)
 
 start_train_time = time.time()
 
 net.train(train_x, train_y, Xvalid=valid_x,
-          Yvalid=valid_y, learning_rate=0.1,
-          max_epochs=20, batch_size=100,
+          Yvalid=valid_y, learning_rate=0.01,
+          max_epochs=100, batch_size=128,
           y_one_hot=True)
 end_train_time = time.time()
 
