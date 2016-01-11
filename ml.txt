@@ -1,0 +1,10 @@
+Max - no augmentation 5000
+Max - zoom 15000
+Janosch- shift 15000
+Janosch - rotate 15000
+Janosch - mirror 15000
+Max - all augmentations 25000
+Max - multiple augmentations random 15000
+Janosch - shift * 4 25000
+
+conv-pool-conv-pool-conv-flatten-fully_100-fully_10-softmax
