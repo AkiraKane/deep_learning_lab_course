@@ -16,17 +16,6 @@ train_x, train_y = train_data
 valid_x, valid_y = valid_data
 test_x, test_y = test_data
 
-# Do the augmentation
-t = Transformer()
-ori_size = len(train_x)
-for i in range(ori_size):
-    image = train_x[i]
-    label = train_y[i]
-
-    transformed = t.process(image, n=2)
-    train_x = np.append(train_x, transformed, axis=0)
-    train_y = np.append(train_y, [label] * len(transformed), axis=0)
-
 print("Data size after augmentation: " + str(train_x.shape))
 
 # Normalize the CIFAR-10 data
